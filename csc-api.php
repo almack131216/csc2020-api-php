@@ -11,10 +11,7 @@ function removeHtmlChars($getString){
 // We'll add less error handling here as you can do that on your own now
 $sql = null;
 $debug = "";
-$printDebug = false;
-if(isset($_REQUEST['debug']) && $_REQUEST['debug'] = true){
-    $printDebug = true;
-}
+
 if($_REQUEST['api'] === 'brands'){
     $sql = "SELECT id,subcategory AS brand,slug FROM catalogue_subcats WHERE category=2 and subcategory!='' ORDER BY subcategory ASC";
 }
@@ -88,7 +85,7 @@ $sql .= $sqlGroup;
 $sql .= $sqlOrder;
 $sql .= $qLimit;
 }
-
+// echo $sql;
 if($sql){
     $debug .= $sql;
 
@@ -126,8 +123,7 @@ if($sql){
             $tmpExcerpt = removeHtmlChars($tmpExcerpt);
             // $tmpExcerpt = str_replace('&nbsp;'," ",$tmpExcerpt);//space char            
             $row['excerpt'] = implode(' ', array_slice(explode(' ', $tmpExcerpt), 0, 30));
-        }
-        
+        }        
         
         if(!$isItemListPage && isset($row['description'])){
             // REF: https://www.w3resource.com/php/function-reference/addcslashes.php
@@ -142,21 +138,11 @@ if($sql){
         $debug .= '<br>'.$tmpCount.' > '.$row['id'].' | '.$row['name'].' | ';
     }
 
-    if(isset($itemId)){
+    $ignore = false;
+    if(!$ignore && isset($itemId)){
         $sql = "SELECT id, name, image_large AS image FROM catalogue WHERE id_xtra=$itemId";
-        $sql .=" ORDER BY position_initem ASC";
-        if (!$result = $mysqli->query($sql)) {
-            return "Sorry, the website is experiencing problems.";
-            exit;
-        }else{
-            if(mysqli_num_rows($result) === 0 ){
-                return "Nothing to do";
-                exit;
-            }
-        }
-        
-        //Initialize array variable
-        // $dbdata = array();
+        $sql .=" ORDER BY position_initem ASC";        
+
         $tmpCount = 0;
         //Fetch into associative array
         while ( $row = $result->fetch_assoc())  {
@@ -172,13 +158,12 @@ if($sql){
     }
     
     if($printDebug){
-        // echo $debug;
-        // echo $sql;
-        // echo '<br>------------<br>';
-        echo json_encode($dbdata, JSON_PRETTY_PRINT);
-    }else{
-        return json_encode($dbdata);
+        echo $debug;
+        echo $sql;
+        echo '<br>------------<br>';
     }
+
+    echo json_encode($dbdata, JSON_PRETTY_PRINT);
 
     // The script will automatically free the result and close the MySQL
     // connection when it exits, but let's just do it anyways

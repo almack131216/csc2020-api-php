@@ -14,6 +14,10 @@ if(!isset($_REQUEST['api'])){
     if(isset($_REQUEST['items'])) include("csc-name-slug.php");
     if(isset($_REQUEST['brands'])) include("csc-brands-slug.php");
 }else{
+    $printDebug = false;
+    if(isset($_REQUEST['debug']) && $_REQUEST['debug'] = true){
+        $printDebug = true;
+    }
     header('Content-Type: application/json');
     include("csc-api.php");
 }
