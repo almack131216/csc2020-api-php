@@ -18,6 +18,9 @@ if(isset($_REQUEST['debug']) && $_REQUEST['debug'] = true){
 if($_REQUEST['api'] === 'brands'){
     $sql = "SELECT id,subcategory AS brand,slug FROM catalogue_subcats WHERE category=2 and subcategory!='' ORDER BY subcategory ASC";
 }
+if(isset($_REQUEST['id'])) {
+    $itemId = $_REQUEST['id'];
+}
 if($_REQUEST['api'] === 'items'){
     $isStockPage = false;
     $isItemListPage = true;
@@ -29,40 +32,40 @@ if($_REQUEST['api'] === 'items'){
     $sqlGroup = " GROUP BY `catalogue`.`id`,`catalogue`.`name`";
     $sqlOrder = " ORDER BY `catalogue`.`upload_date` DESC";
     $qLimit = " LIMIT 300";
-    if($_REQUEST['spec'] === 'for-sale') {
+    if($_REQUEST['spec'] === 'Live') {
         $isStockPage = true;
         $sqlSelect .= $sqlSelectCommonStock; 
         // $sqlSelect .= $sqlSelectCommonExcerpt;        
         $sqlSelect .= $sqlSelectCommonPrice;               
         $sqlWhere .= " AND `catalogue`.`category` = 2 AND `catalogue`.`status` = 1";        
     }
-    if($_REQUEST['spec'] === 'sold') {
+    if($_REQUEST['spec'] === 'Archive') {
         $isStockPage = true;
         $sqlSelect .= $sqlSelectCommonStock;
         // $sqlSelect .= $sqlSelectCommonExcerpt; 
         $sqlWhere .= " AND `catalogue`.`category` = 2 AND `catalogue`.`status` = 2";
     }
-    if($_REQUEST['spec'] === 'press') {
+    if($_REQUEST['spec'] === 'Press') {
         $isStockPage = false;
         $sqlSelect .= ",`catalogue`.`detail_2` AS source";
         $sqlWhere .= " AND `catalogue`.`category` = 4 AND `catalogue`.`status` = 1";
     }
-    if($_REQUEST['spec'] === 'testimonials') {
+    if($_REQUEST['spec'] === 'Testimonials') {
         $isStockPage = false;
         $sqlSelect .= ",`catalogue`.`detail_2` AS source";
         $sqlWhere .= " AND `catalogue`.`category` = 3 AND `catalogue`.`status` = 1";
     }
-    if($_REQUEST['spec'] === 'news') {
+    if($_REQUEST['spec'] === 'News') {
         $isStockPage = false;
         $sqlSelect .= ",`catalogue`.`detail_2` AS source";
         $sqlWhere .= " AND `catalogue`.`category` = 5 AND `catalogue`.`status` = 1";
     }
-    if(isset($_REQUEST['id'])) {
+    if(isset($itemId)) {
         $sqlGroup = "";
         $isItemListPage = false;
         $sqlSelect .= ",`catalogue`.`description`";
-        $sqlWhere = " AND ((`catalogue`.`id` = ".$_REQUEST['id']." AND `catalogue`.`category` = 2 AND `catalogue`.`status` = 1)";
-        $sqlWhere .= " OR (`catalogue`.`id_xtra` = ".$_REQUEST['id']."))";
+        $sqlWhere = " AND (`catalogue`.`id` = ".$itemId."";
+        $sqlWhere .= " OR `catalogue`.`id_xtra` = ".$itemId.")";
     }else{
         $sqlSelect .= $sqlSelectCommonExcerpt;
     }
@@ -85,6 +88,7 @@ $sql .= $sqlGroup;
 $sql .= $sqlOrder;
 $sql .= $qLimit;
 }
+
 if($sql){
     $debug .= $sql;
 
@@ -106,8 +110,10 @@ if($sql){
         $tmpCount = $tmpCount + 1;
         // $dbdata[]=$row;
         $row['id'] = intval($row['id']);
-        $row['name'] = htmlspecialchars($row['name']);//£
+        $row['name'] = htmlspecialchars($row['name']);//£        
         $row['name'] = removeHtmlChars($row['name']);
+        $itemName = $row['name'];
+
         $row['status'] = intval($row['status']);
         $row['category'] = intval($row['category']);
         if($isStockPage){
@@ -124,6 +130,7 @@ if($sql){
         
         
         if(!$isItemListPage && isset($row['description'])){
+            // REF: https://www.w3resource.com/php/function-reference/addcslashes.php
             $row['description'] = addcslashes($row['description'],'"');
         }
 
@@ -133,6 +140,35 @@ if($sql){
         $row['catalogue_subcat']['slug'] = $row['catalogue_subcat_slug'];
         $dbdata[]=$row;
         $debug .= '<br>'.$tmpCount.' > '.$row['id'].' | '.$row['name'].' | ';
+    }
+
+    if(isset($itemId)){
+        $sql = "SELECT id, name, image_large AS image FROM catalogue WHERE id_xtra=$itemId";
+        $sql .=" ORDER BY position_initem ASC";
+        if (!$result = $mysqli->query($sql)) {
+            return "Sorry, the website is experiencing problems.";
+            exit;
+        }else{
+            if(mysqli_num_rows($result) === 0 ){
+                return "Nothing to do";
+                exit;
+            }
+        }
+        
+        //Initialize array variable
+        // $dbdata = array();
+        $tmpCount = 0;
+        //Fetch into associative array
+        while ( $row = $result->fetch_assoc())  {
+            $tmpCount = $tmpCount + 1;
+            // $dbdata[]=$row;
+            $row['id'] = intval($row['id']);
+            $row['name'] = htmlspecialchars($row['name']);//£
+            $row['name'] = removeHtmlChars($row['name']);    
+            if(!$row['name']) $row['name'] = $itemName;
+            $dbdata[]=$row;
+            $debug .= '<br>'.$tmpCount.' > '.$row['id'].' | '.$row['name'].' | ';
+        }
     }
     
     if($printDebug){
