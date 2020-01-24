@@ -1,17 +1,41 @@
 <?php
 
-function create_slug_prep_items($getYear,$getName) {
-    $tmp = '';   
-    $tmp .= $getName;
+if(isset($_REQUEST['rename'])){
+    $rename = true;
+    echo "<h1>item rename + slugify</h1>";
+}else{
+   $rename = false;
+   echo "<h1>item slugify</h1>";
+}
+
+if(isset($_REQUEST['category'])){
+    $categoryId = $_REQUEST['category'];    
+}else{
+    $categoryId = 2;
+}
+echo "<h1>category ".$categoryId."</h1>";
+
+function create_slug_prep_items($getYear,$getName) { 
+    $tmp = $getName;
     if($getYear!='' && $getYear!='0' && $getYear!=0) $tmp .= '-'.$getYear;
     $tmp = strtolower($tmp);
     return create_slug($tmp);
  }
 
-echo "<h1>item slugify</h1>";
+ function strip_crap($getName){
+    $tmp = str_replace('&nbsp;'," ",$getName);//space char 
+    $tmp = str_replace('&amp;',"&",$tmp);//& char
+    $tmp = str_replace('#39;',"'",$tmp);//& char    
+    return $tmp;
+ }
+
+
+
 // Now, let's fetch five random items and output their names to a list.
 // We'll add less error handling here as you can do that on your own now
-$sql = "SELECT id,name,detail_1 FROM catalogue WHERE category=2 and name!='' AND slug='' ORDER BY name ASC LIMIT 100";
+$sql = "SELECT id,name,detail_1 FROM catalogue WHERE category=$categoryId and name!=''";
+if(!$rename) $sql .= " AND slug=''";//rename regardless of slug
+$sql .= " ORDER BY name ASC LIMIT 100";
 if (!$result = $mysqli->query($sql)) {
     echo "Sorry, the website is experiencing problems.";
     exit;
@@ -26,6 +50,10 @@ if (!$result = $mysqli->query($sql)) {
 echo "<table>\n";
 while ($item = $result->fetch_assoc()) {
     $id = $item['id'];
+    if($rename){
+        $renamed = strip_crap($item['name']);
+    }
+    
     $slugged = create_slug_prep_items($item['detail_1'],$item['name']);
 
     echo "<tr>";
@@ -36,7 +64,9 @@ while ($item = $result->fetch_assoc()) {
     echo "<td>".$slugged."</td>";
     echo "</tr>\n";
 
-    $sqlUpdate = "UPDATE catalogue SET slug='$slugged' WHERE id=$id";
+    $sqlUpdate = "UPDATE catalogue SET";
+    if($renamed) $sqlUpdate .= " name='$renamed',";
+    $sqlUpdate .= " slug='$slugged' WHERE id=$id";
     if ($r = $mysqli->query($sqlUpdate)) {
         echo "<tr><td colspan=4><strong style='color:green'>updated</strong></td></tr>";
     }

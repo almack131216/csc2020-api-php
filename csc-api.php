@@ -107,8 +107,8 @@ if($sql){
         $tmpCount = $tmpCount + 1;
         // $dbdata[]=$row;
         $row['id'] = intval($row['id']);
-        $row['name'] = htmlspecialchars($row['name']);//£        
-        $row['name'] = removeHtmlChars($row['name']);
+        // $row['name'] = htmlspecialchars($row['name']);//£        
+        // $row['name'] = removeHtmlChars($row['name']);
         $itemName = $row['name'];
 
         $row['status'] = intval($row['status']);
@@ -143,18 +143,29 @@ if($sql){
         $sql = "SELECT id, name, image_large AS image FROM catalogue WHERE id_xtra=$itemId";
         $sql .=" ORDER BY position_initem ASC";        
 
-        $tmpCount = 0;
-        //Fetch into associative array
-        while ( $row = $result->fetch_assoc())  {
-            $tmpCount = $tmpCount + 1;
-            // $dbdata[]=$row;
-            $row['id'] = intval($row['id']);
-            $row['name'] = htmlspecialchars($row['name']);//£
-            $row['name'] = removeHtmlChars($row['name']);    
-            if(!$row['name']) $row['name'] = $itemName;
-            $dbdata[]=$row;
-            $debug .= '<br>'.$tmpCount.' > '.$row['id'].' | '.$row['name'].' | ';
+        if (!$result = $mysqli->query($sql)) {
+            // return "Sorry, the website is experiencing problems.";
+            // exit;
+        }else{
+            if(mysqli_num_rows($result) === 0 ){
+                // return "Nothing to do";
+                // exit;
+            } else {
+                $tmpCount = 0;
+                //Fetch into associative array
+                while ( $row = $result->fetch_assoc())  {
+                    $tmpCount = $tmpCount + 1;
+                    // $dbdata[]=$row;
+                    $row['id'] = intval($row['id']);
+                    $row['name'] = htmlspecialchars($row['name']);//£
+                    $row['name'] = removeHtmlChars($row['name']);    
+                    if(!$row['name']) $row['name'] = $itemName;
+                    $dbdata[]=$row;
+                    $debug .= '<br>'.$tmpCount.' > '.$row['id'].' | '.$row['name'].' | ';
+                }
+            }
         }
+        
     }
     
     if($printDebug){
